@@ -1,10 +1,9 @@
 version: "3.6"
-
 services:
   database:
     image: mysql:5.7
     restart: always
-    container_name: site-db
+    container_name: db
     expose:
       - 3306
     environment:
@@ -14,14 +13,13 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
     volumes:
       - ./data/db-data:/var/lib/mysql
-
   nginx:
     image: nginx-flarum
     build:
       context: ./nginx
       args: 
         - DOMAIN=${DOMAIN}
-    container_name: site-nginx
+    container_name: nginx
     restart: always
     ports:
       - 80:80
@@ -49,27 +47,10 @@ services:
       driver: "json-file"
       options:
         max-size: "100m"
-
-  acme.sh:
-    image: neilpang/acme.sh
-    container_name: acme.sh
-    command: daemon
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./data/ssl/acmeout:/acme.sh
-      - ./data/ssl/.well-known:/.well-known
-    environment:
-      - DEPLOY_DOCKER_CONTAINER_LABEL=sh.acme.autoload.domain=${DOMAIN}
-      - DEPLOY_DOCKER_CONTAINER_KEY_FILE=/etc/ssl/certs/${DOMAIN}/key.pem
-      - DEPLOY_DOCKER_CONTAINER_CERT_FILE="/etc/ssl/certs/${DOMAIN}/cert.pem"
-      - DEPLOY_DOCKER_CONTAINER_CA_FILE="/etc/ssl/certs/${DOMAIN}/ca.pem"
-      - DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE="/etc/ssl/certs/${DOMAIN}/full.pem"
-      - DEPLOY_DOCKER_CONTAINER_RELOAD_CMD="kill 1"
-
   php-fpm-service:
     image: php-fpm-flarum
     build: ./php-fpm
-    container_name: site-php-fpm
+    container_name: flarum
     restart: always
     expose:
       - 9000
@@ -84,15 +65,5 @@ services:
       driver: "json-file"
       options:
         max-size: "100m"
-
-  pma-service:
-    image: phpmyadmin/phpmyadmin:fpm-alpine
-    container_name: site-pma
-    restart: always
-    environment: 
-      - PMA_HOST=site-db
-    volumes:
-      - pma-root:/var/www/html
-
 volumes: 
   pma-root:
